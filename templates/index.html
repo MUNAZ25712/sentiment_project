@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentilytics - Professional Sentiment Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #10b981;
+            --bg-color-from: #f8fafc;
+            --bg-color-to: #e2e8f0;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-border: rgba(255, 255, 255, 0.8);
+            --header-bg: rgba(255, 255, 255, 0.9);
+            --text-dark: #0f172a;
+            --text-light: #64748b;
+            --input-bg: #f1f5f9;
+            --input-border: #cbd5e1;
+            --sidebar-bg: #ffffff;
+        }
+
+        .dark-mode {
+            --primary: #6366f1;
+            --primary-hover: #818cf8;
+            --secondary: #34d399;
+            --bg-color-from: #0f172a;
+            --bg-color-to: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.95);
+            --card-border: rgba(255, 255, 255, 0.05);
+            --header-bg: rgba(15, 23, 42, 0.95);
+            --text-dark: #f8fafc;
+            --text-light: #94a3b8;
+            --input-bg: #1e293b;
+            --input-border: #334155;
+            --sidebar-bg: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-color-from) 0%, var(--bg-color-to) 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 3rem;
+            background: var(--header-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-dark);
+            font-size: 1.25rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background: var(--input-bg);
+            color: var(--primary);
+        }
+
+        /* Main Layout Grid */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+            padding: 2rem 3rem;
+            flex-grow: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Config Card */
+        .config-card {
+            background: var(--card-bg);
+            border: 1px solid var(--primary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .config-info h3 {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .config-info p {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        .api-input-group {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .api-input-group input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-dark);
+            font-size: 0.9rem;
+        }
+
+        .api-input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        /* Action Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card h2 {
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            font-size: 1.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card h2 i {
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+            padding: 0.75rem;
+            border-radius: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            resize: vertical;
+            background: var(--input-bg);
+            color: var(--text-dark);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 1.5rem;
+            background: var(--input-bg);
+            color: var(--text-dark);
+            border: 2px dashed var(--input-border);
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 1rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        input[type="file"]:hover {
+            border-color: var(--primary);
+        }
+
+        button.submit-btn {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button.submit-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            display: block;
+        }
+
+        /* Sidebar History Data Store */
+        .history-sidebar {
+            background: var(--sidebar-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: calc(100vh - 120px);
+            position: sticky;
+            top: 100px;
+        }
+
+        .history-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--input-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-header h2 {
+            font-size: 1.25rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .history-header i {
+            color: var(--secondary);
+        }
+
+        .history-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .history-item {
+            padding: 1rem;
+            background: var(--input-bg);
+            border-radius: 10px;
+            border: 1px solid var(--input-border);
+            transition: transform 0.2s;
+        }
+
+        .history-item:hover {
+            transform: translateX(4px);
+            border-color: var(--primary);
+        }
+
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .history-text {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            margin-bottom: 0.75rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .history-result {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .res-positive { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .res-negative { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .res-neutral { background: rgba(100, 116, 139, 0.15); color: var(--text-light); }
+
+        .empty-history {
+            text-align: center;
+            color: var(--text-light);
+            padding: 3rem 1rem;
+            font-size: 0.95rem;
+        }
+
+        .empty-history i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Result Display Single */
+        .result-box {
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-chart-line"></i> Sentilytics
+        </div>
+        <div class="navbar-controls">
+            <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        
+        <!-- Main Analysis Content -->
+        <main class="main-content">
+            
+            <!-- Global Config: API Key -->
+            <div class="config-card">
+                <div class="config-info">
+                    <h3><i class="fas fa-robot"></i> Public API Integration</h3>
+                    <p>Enter a Hugging Face Token to use the advanced cloud model, or leave blank to use the local model.</p>
+                </div>
+                <!-- We store the global key here and JS copies it to forms on submit -->
+                <div class="api-input-group">
+                    <input type="password" id="globalApiKey" placeholder="hf_xxxxxxxxxxxxxxxxx (Optional)">
+                </div>
+            </div>
+
+            <div class="cards-grid">
+                
+                <!-- Single Analysis Card -->
+                <div class="card">
+                    <h2><i class="fas fa-comment-dots"></i> Fast Analysis</h2>
+                    <form action="/analyze" method="POST" onsubmit="attachApiKey(this)">
+                        <input type="hidden" name="api_key" class="hidden-api">
+                        <div class="form-group">
+                            <textarea name="review" rows="4" placeholder="Enter patient feedback or text to analyze..." required></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn"><i class="fas fa-magic"></i> Analyze Sentiment</button>
+                    </form>
+
+                    {% if result %}
+                        <div class="result-box {% if 'Positive' in result %}res-positive{% elif 'Negative' in result %}res-negative{% else %}res-neutral{% endif %}">
+                            {{ result }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- URL Analysis Card -->
+                <div class="card">
+                    <h2><i class="fas fa-link"></i> Web Link Scanner</h2>
+                    <form action="/analyze_url" method="POST" onsubmit="attachApiKey(this)">
+                        <input type="hidden" name="api_key" class="hidden-api">
+                        <div class="form-group">
+                            <textarea name="url" rows="2" placeholder="https://example.com/reviews..." required></textarea>
+                            <span class="upload-hint">We'll extract the text and run sentiment analysis immediately.</span>
+                        </div>
+                        <button type="submit" class="submit-btn"><i class="fas fa-globe"></i> Scan & Analyze</button>
+                    </form>
+                </div>
+
+                <!-- Bulk Analysis Card -->
+                <div class="card" style="grid-column: 1 / -1; max-width: 600px;">
+                    <h2><i class="fas fa-file-csv"></i> Bulk CSV Workspace</h2>
+                    <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="attachApiKey(this)">
+                        <input type="hidden" name="api_key" class="hidden-api">
+                        <div class="form-group">
+                            <input type="file" name="file" accept=".csv" required>
+                            <span class="upload-hint">Upload a CSV file containing a 'review' column. Max 50 rows for safety.</span>
+                        </div>
+                        <button type="submit" class="submit-btn"><i class="fas fa-layer-group"></i> Process Bulk Batch</button>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Search History Sidebar Data Store -->
+        <aside class="history-sidebar">
+            <div class="history-header">
+                <h2><i class="fas fa-database"></i> Search History</h2>
+            </div>
+            <div class="history-list">
+                {% if history %}
+                    {% for item in history %}
+                    <div class="history-item">
+                        <div class="history-meta">
+                            <span>{{ item.source }}</span>
+                            <span>{{ item.time.split(' ')[1] }}</span>
+                        </div>
+                        <div class="history-text">
+                            "{{ item.text }}"
+                        </div>
+                        <div class="history-result {% if 'Positive' in item.result or '+' in item.result %}res-positive{% elif 'Negative' in item.result or '-' in item.result %}res-negative{% else %}res-neutral{% endif %}">
+                            {{ item.result }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-history">
+                        <i class="fas fa-inbox"></i>
+                        <p>Your datastore history is empty.<br>Run an analysis to log records.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if agg and (agg.positive > 0 or agg.neutral > 0 or agg.negative > 0) %}
+            <div class="history-aggregate" style="padding: 1.5rem; border-top: 1px solid var(--input-border); background: var(--input-bg);">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-dark); text-align: center;">Total History Sentiment</h3>
+                <div style="position: relative; height: 200px; width: 100%;">
+                    <canvas id="aggPieChart"></canvas>
+                </div>
+            </div>
+            {% endif %}
+        </aside>
+
+    </div>
+
+    <script>
+        // API Key Persistence and Form Attachment
+        const globalApiKeyInput = document.getElementById('globalApiKey');
+        
+        // Load saved key from localStorage
+        const savedKey = localStorage.getItem('hf_api_key');
+        if(savedKey) {
+            globalApiKeyInput.value = savedKey;
+        }
+
+        // Save key on change
+        globalApiKeyInput.addEventListener('change', (e) => {
+            localStorage.setItem('hf_api_key', e.target.value);
+        });
+
+        // Function to bind global key to forms right before submission
+        function attachApiKey(formElement) {
+            const hiddenApiInput = formElement.querySelector('.hidden-api');
+            if(hiddenApiInput) {
+                hiddenApiInput.value = globalApiKeyInput.value;
+            }
+        }
+
+        // Theme Toggle Logic
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            icon.classList.replace('fa-moon', 'fa-sun');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                localStorage.setItem('theme', 'light');
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
+            if (typeof updateChartTheme === "function") {
+                updateChartTheme();
+            }
+        });
+        
+        // Aggregate Chart Logic
+        {% if agg and (agg.positive > 0 or agg.neutral > 0 or agg.negative > 0) %}
+        const aggCtx = document.getElementById('aggPieChart').getContext('2d');
+        const aggChart = new Chart(aggCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Positive', 'Neutral', 'Negative'],
+                datasets: [{
+                    data: [{{ agg.positive }}, {{ agg.neutral }}, {{ agg.negative }}],
+                    backgroundColor: ['rgba(16, 185, 129, 0.8)', 'rgba(148, 163, 184, 0.8)', 'rgba(239, 68, 68, 0.8)'],
+                    borderColor: ['#10b981', '#94a3b8', '#ef4444'],
+                    borderWidth: 2,
+                    hoverOffset: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 12 } } } },
+                cutout: '60%'
+            }
+        });
+        
+        function updateChartTheme() {
+            if (document.body.classList.contains('dark-mode')) {
+                Chart.defaults.color = '#cbd5e1';
+            } else {
+                Chart.defaults.color = '#1e293b';
+            }
+            Chart.defaults.font.family = "'Outfit', sans-serif";
+            aggChart.update();
+        }
+        
+        // Initial theme for chart
+        updateChartTheme();
+        {% endif %}
+    </script>
+</body>
+</html>
